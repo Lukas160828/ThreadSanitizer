@@ -1,6 +1,8 @@
-## Table of Contents
-1. [General Info](#general-info)
-2. [Technologies](#technologies)
-3. [Installation](#installation)
-4. [Collaboration](#collaboration)
-5. [FAQs](#faqs)
+# ThreadSanitizer zur Deadlockanalyse
+
+## Inhaltsverzeichnis
+1. [Aktueller existierender Wissensstand](#wissensstand)
+    * [Dokumentation](#dokumentation)
+    * [Beispiele](#beispiele)
+    * [Anwendungen von ThreadSanitizer](#anwendung)
+2. [Evaluation der Verfügbaren Informationen](#evaluation)
