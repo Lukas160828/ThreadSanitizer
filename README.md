@@ -1,17 +1,26 @@
 # ThreadSanitizer 
 
 ## Inhaltsverzeichnis
-1. Aktueller Wissensstand
+1. Grundlagen zu Data Races
+  * [Wie entseht ein Data Race](#wie_entsteht_ein_data_race)
+  * [Algorithmen zur Erkennung](#algorithmen_zur_erkennung)
+2. Aktueller Wissensstand zu ThreadSanitizer
   * [Dokumentation](#dokumentation)
   * [Beispiele](#beispiele)
   * [Anwendungen von ThreadSanitizer](#anwendung-von-threadsanitizer)
-2. Benutzung von ThreadSanitizer
+3. Benutzung von ThreadSanitizer
   * [Report Format](#report-format)
   * [false positives](#false-positives)
   * [false negatives](#false-negatives)
 
 ***
-# 1. Aktueller Wissensstand
+# 1. Grundlagen zu Data Races
+## Wie entseht ein Data Race
+Ein Data Race ist eine Konstellation in der mindestens Zwei Threads auf eine geteilten Speicherbereich zugreifen und mindestens einer der Zugriffe die Resource verändert, ohne einen exklusiven Zugriff darauf zu haben. Dies kann zu unvorhersehbarem Verhalten und nur schwer reproduzierbaren Fehlern führen. Ein Beispiel für ein Data Race findet man [hier]().
+## Algorithmen zur Erkennung
+
+***
+# 1. Aktueller Wissensstand zu ThreadSanitizer
 ## Dokumentation
 Quelle 1: [ThreadSanitizerCppManual Github](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual)
 
@@ -20,7 +29,7 @@ Durch eine normale Suche per Google findet man als erstes Ergebnis dieses Github
 
 Hierzu zählen:
 
-1. Eine Einführung in Data Races anhand eines [Beispiels]() allgemein
+1. Eine Einführung in Data Races anhand eines [Beispiels](#beispiel1) allgemein
 
 2. Eine Übersicht wo und wie ThreadSanitizer zur Verfügung gestellt wird. Es existiert eine Liste über die unterstützten Platformen. Die Liste wurde jedoch zuletzt im Dezember 2018 aktualisiert. Es existiert ein Link der auf eine aktuelle Liste zeigen soll, er führt jedoch lediglich auf ein Github Repository in dem das [Header File von ThreadSanitizer](https://github.com/llvm-mirror/compiler-rt/blob/master/lib/tsan/rtl/tsan_platform.h) liegt. Hierbei werden checks über die Platform im Code ausgeführt, welche man sich anschauen kann. Heißt hier ist die vollständige Liste theoretisch vorhanden, es ist jedoch nicht direkt ersichtlich da es nicht gesammelt verfügbar ist.
 3. Ein [Beispiel]() zur Benutzung von ThreadSanitizer, sowie eine Auflistung der vorhandenen Flags und Blacklist 
@@ -70,6 +79,7 @@ Dieses Beispiel finde ich nicht so gelungen da es nicht erklärt wird wodurch hi
 
 Eine Übersicht wie man ThreadSanitizer verwenden kann. Das Beispiel hierfür ist gut gewählt, da es sehr intuitiv verständlich ist. 
 
+### <a name="beispiel1"></a>
 ```cpp
 $ cat simple_race.cc
 #include <pthread.h>
@@ -120,6 +130,7 @@ ThreadSanitizer: reported 1 warnings
 ```
 
 ## Anwendungen von ThreadSanitizer
+hi
 ***
 # 2. Benutzung von ThreadSanitizer
 ## Report Format
