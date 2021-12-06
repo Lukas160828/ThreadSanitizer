@@ -2,7 +2,7 @@
 
 ## Inhaltsverzeichnis
 1. Grundlagen zu Data Races
-  * [Wie entseht ein Data Race](#wie_entsteht_ein_data_race)
+  * [Wie entsteht ein Data Race](#wie_entsteht_ein_data_race)
   * [Algorithmen zur Erkennung](#algorithmen_zur_erkennung)
 2. Aktueller Wissensstand zu ThreadSanitizer
   * [Dokumentation](#dokumentation)
@@ -16,11 +16,14 @@
 ***
 # 1. Grundlagen zu Data Races
 ## Wie entseht ein Data Race
-Ein Data Race ist eine Konstellation in der mindestens Zwei Threads auf eine geteilten Speicherbereich zugreifen und mindestens einer der Zugriffe die Resource verändert, ohne einen exklusiven Zugriff darauf zu haben. Dies kann zu unvorhersehbarem Verhalten und nur schwer reproduzierbaren Fehlern führen. Ein Beispiel für ein Data Race findet man [hier]().
+Ein Data Race ist eine Konstellation in der mindestens Zwei Threads auf eine geteilten Speicherbereich zugreifen und mindestens einer der Zugriffe die Resource verändert, ohne einen exklusiven Zugriff darauf zu haben. Dies kann zu unvorhersehbarem Verhalten und nur schwer reproduzierbaren Fehlern führen. Ein Beispiel für ein Data Race findet man [hier](#beispiel1).
 ## Algorithmen zur Erkennung
+Um Data Races zu erkennen gibt es zwei grundlegende Ansätze. Den der Dynamischen und den der Statischen Data Race Vorhersage. Im Statischen Ansatz wird der Source Code analysiert ohne dass er ausgeführt werden muss. Beim Dynamischen Ansatz werden Events wie Zugriffe auf den Speicher per Trace aufgezeichnet. Dieser Trace ist dann jedoch nur für diesen speziellen Programmablauf gültig. Dies liegt daran, dass Nebenläufigkeit nichtdeterministisch ist und beim erneuten ausführen eine andere, ebenfalls valide Trace- Reihenfolge möglich ist. Der Ansatz ist nun, zu untersuchen ob eine gültige Restrukturierung des Traces möglich ist, sodass ein Data Race auftritt.
+
+Bei der Dynamischen Data Race Erkennung kommen zwei Hauptsächliche Algorithmen zum Einsatz. Zum einen die Happens- Before relation und zum anderen die Analyse über locksets.
 
 ***
-# 1. Aktueller Wissensstand zu ThreadSanitizer
+# 2. Aktueller Wissensstand zu ThreadSanitizer
 ## Dokumentation
 Quelle 1: [ThreadSanitizerCppManual Github](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual)
 
@@ -130,9 +133,9 @@ ThreadSanitizer: reported 1 warnings
 ```
 
 ## Anwendungen von ThreadSanitizer
-hi
+
 ***
-# 2. Benutzung von ThreadSanitizer
+# 3. Benutzung von ThreadSanitizer
 ## Report Format
 Eine ausführliche Beschreibung wie Reports aufgebaut sind findet man [hier](https://github.com/google/sanitizers/wiki/ThreadSanitizerReportFormat).
 
