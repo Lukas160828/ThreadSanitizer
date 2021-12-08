@@ -20,7 +20,16 @@ Ein Data Race ist eine Konstellation in der mindestens Zwei Threads auf eine get
 ## Algorithmen zur Erkennung
 Um Data Races zu erkennen gibt es zwei grundlegende Ansätze. Den der Dynamischen und den der Statischen Data Race Vorhersage. Im Statischen Ansatz wird der Source Code analysiert ohne dass er ausgeführt werden muss. Beim Dynamischen Ansatz werden Events wie Zugriffe auf den Speicher per Trace aufgezeichnet. Dieser Trace ist dann jedoch nur für diesen speziellen Programmablauf gültig. Dies liegt daran, dass Nebenläufigkeit nichtdeterministisch ist und beim erneuten ausführen eine andere, ebenfalls valide Trace- Reihenfolge möglich ist. Der Ansatz ist nun, zu untersuchen ob eine gültige Restrukturierung des Traces möglich ist, sodass ein Data Race auftritt.
 
-Bei der Dynamischen Data Race Erkennung kommen zwei Hauptsächliche Algorithmen zum Einsatz. Zum einen die Happens- Before relation und zum anderen die Analyse über locksets.
+Bei der Dynamischen Data Race Erkennung kommen zwei Hauptsächliche Algorithmen zum Einsatz. Zum einen die Happens- Before Relation und zum anderen die Analyse über locksets.
+
+#### Happens- Before:
+Bei der Happens- Before Methode betrachet man alle Zugriffe auf den Speicher und versucht zwischen ihnen eine Relation bezüglich der Ausführungsreihenfolge herzustellen. Das Ziel hierbei ist es, herauszufinden ob es möglich ist zwei Zugriffe auf die selbe Resource so umzuordnen dass ein Data Race entsteht. Dies ist allgemein möglich, wenn zwischen zwei Zugriffen keine klare Reihenfolge definiert werden kann. In diesem Fall geht man davon aus dass man sie potentiell so umordnen kann, dass ein Data Race entsteht.
+
+#### Locksets: 
+Bei der Lockset Methode überprüft man welche Locks von dem jeweiligen Thread zum Zeitpunkt des Zugriffs gehalten werden. Greifen mehrere Threads auf eine geteile Resource zu, teilen sich jedoch zusätzlich ein Lock, so können sie nur darauf zugreifen wenn der Thread mit dem Lock fertig ist und es freigibt.
+
+
+
 
 ***
 # 2. Aktueller Wissensstand zu ThreadSanitizer
