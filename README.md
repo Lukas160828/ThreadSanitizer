@@ -196,6 +196,7 @@ Zusätzlich gibt es auch Blöcke die Informationen über eine Synchronisation vo
 ```
 ***
 # 4. Verwendeter Algorithmus
+Im folgenden werde ich die Funktionsweise des Algorithmus von ThreadSanitizer zur Erkennugn von Data Races textuell beschreiben. Eine Formale Definition findet man [hier](http://www.cs.columbia.edu/~junfeng/11fa-e6121/papers/thread-sanitizer.pdf) (Seite 63 ff).
 ## Instrumentation
 ThreadSanitizer betrachtet den Programmfluss als Abfolge von Events. Die wichtigsten Events zur Erkennung von Data Races sind zum einen Zugriffe auf Speicher wie schreiben oder lesen. Hier wird Grundlegend jeder Zugriff instrumentiert, außer wenn man weiß dass dadurch kein Data Race entstehen kann oder er redundant ist.
 
@@ -225,4 +226,6 @@ Die Überprüfung ob ein Data Race erkannt werden kann findet nach jedem Zugriff
 Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib Segment mit jedem anderen Schreib Segment. Hierzu wird zuerst überprüft ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens- Before Relation definieren kann. Falls ja, dann sagt man dass kein Data Race vorliegt. Kann hierdurch keine Reihenfolge definieren werden, werden die Locksets beider Schreib Segmente verglichen. Ist die Schnittmenge der Locksets leer, so halten beide Segmente keine gemeinsamen Locks. Würden sie einen Lock auf die selbe Speicheradresse teilen, würden sie sich gegenseitig beim Zugriff ausschließen und so könnte kein Data Race entstehen. Dies ist nicht der Fall wenn die Schnittmenge der Locksets beider Segmente leer ist und so wird an dieser Stelle ein Data Race erkannt.
 
 Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib- Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die definition schon weiß dass keine Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen muss nun lediglich die andere Richtung überprüft werden. Weißt nun also das Segment der aktuellen Iterationsstufe keine Happens- Before Relation auf das aktuelle Lese Segment wissen wir dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
+
+
 
