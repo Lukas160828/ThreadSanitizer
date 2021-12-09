@@ -12,6 +12,9 @@
   * [Report Format](#report-format)
   * [false positives](#false-positives)
   * [false negatives](#false-negatives)
+4. Verwendeter Algorithmus
+  * [Instrumentation](#instrumentation)
+  * [Data Race erkennung](#data-race-erkennung)
 
 ***
 # 1. Grundlagen zu Data Races
@@ -189,4 +192,20 @@ Zusätzlich gibt es auch Blöcke die Informationen über eine Synchronisation vo
     #0 pthread_rwlock_init tsan_interceptors.cc:839 (exe+0x00000000c8f1)
     #1 main mutexset6.cc:33 (exe+0x000000003e89)
 ```
+***
+# 4. Verwendeter Algorithmus
+## Instrumentation
+ThreadSanitizer betrachtet den Programmfluss als Abfolge von Events. Die wichtigsten Events zur Erkennung von Data Races sind zum einen Zugriffe auf Speicher wie schreiben oder lesen. Hier wird Grundlegend jeder Zugriff instrumentiert, außer wenn man weiß dass dadurch kein Data Race entstehen kann oder er redundant ist.
+
+Ein Beispiel für Zugriffe ohne Data Race ist:
+* Lesezugriffe auf globale Konstanten
+
+Ein Beispiel für einen Redundanten Zufriff ist:
+* Lesezugriffe die sequentiell vor Schreibzugriffen stattfinden
+
+Weitere wichtige Ereignisse sind Synchronisierende Events, wie die Aneignung oder Freigabe eines Locks. Dies ist wichtig um die Happens- Before Relation festzustellen.
+
+## 
+
+
 
