@@ -31,7 +31,7 @@ Bei der Dynamischen Data Race Erkennung kommen zwei Hauptsächliche Algorithmen 
 Bei der Happens- Before Methode betrachet man alle Zugriffe auf den Speicher und versucht zwischen ihnen eine Relation bezüglich der Ausführungsreihenfolge herzustellen. Das Ziel hierbei ist es, herauszufinden ob es möglich ist zwei Zugriffe auf die selbe Resource so umzuordnen dass ein Data Race entsteht. Dies ist allgemein möglich, wenn zwischen zwei Zugriffen keine klare Reihenfolge definiert werden kann. In diesem Fall geht man davon aus dass man sie potentiell so umordnen kann, dass ein Data Race entsteht.
 
 #### Locksets: 
-Bei der Lockset Methode überprüft man welche Locks von dem jeweiligen Thread zum Zeitpunkt des Zugriffs gehalten werden. Greifen mehrere Threads auf eine geteile Resource zu, teilen sich jedoch zusätzlich ein Lock, so können sie nur darauf zugreifen wenn der Thread mit dem Lock fertig ist und es freigibt.
+Bei der Lockset Methode überprüft man welche Locks von dem jeweiligen Thread zum Zeitpunkt des Zugriffs gehalten werden. Greifen mehrere Threads auf eine geteile Resource zu, teilen sich jedoch zusätzlich ein Lock, so schließen die Zugriffe der Threads sich gegenseitig aus. Andere Zugriffe auf die selbe Adresse können erst stattfinden wenn der Thread mit dem Lock diesen wieder frei gibt. Dadurch wird ein Data Race verhindert.
 
 
 
@@ -217,9 +217,12 @@ Wird erkannt dass ein Zugriff auf den Speicher stattfindet, wird ein Handler auf
 
 Im Handler wird zunächst über die Thread ID das aktuelle Segment und über die ID des Speicherorts der dazugehörige per-ID State geladen. Dort stehen alle bisher erfolgten Lese- und Schreibzugriffe (SS<sub><sup>rd</sup></sub>, SS<sub><sup>wr</sup></sub>), zwischen denen man keine Happens- Before Relation definieren kann. 
 
-Nun werden SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> um den Aufruf erweitert, so dass sie immer noch ihren Definitionen entsprechen. Das bedeutet dass man für kein Segment aus SS<sub><sup>rd</sup></sub> eine Happens- Before Relation auf ein Segment aus SS<sub><sup>wr</sup></sub>) definieren kann. Anhand der aktuellen Segment Sets wird nun der per-ID Zustand aktualisiert und überprüft ob ein Data Race erkannt werden kann.
+Nun werden SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> um den Aufruf erweitert, so dass sie immer noch ihren Definitionen entsprechen. Das bedeutet dass man für kein Segment aus SS<sub><sup>rd</sup></sub> eine Happens- Before Relation auf ein Segment aus SS<sub><sup>wr</sup></sub> definieren kann. Anhand der aktuellen Segment Sets wird nun der per-ID Zustand aktualisiert und überprüft ob ein Data Race erkannt werden kann.
 
 ## Die Überprüfung auf Data Races
+Die Überprüfung ob ein Data Race erkannt werden kann findet nach jedem Zugriff auf den Speicher statt, nachdem Segment Sets SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> aktualisiert wurden. 
 
+Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib Segment mit jedem anderen Schreib Segment. Hierzu wird zuerst überprüft ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens- Before Relation definieren kann. Falls ja, dann sagt man dass kein Data Race vorliegt. Kann hierdurch keine Reihenfolge definieren werden, werden die Locksets beider Schreib Segmente verglichen. Ist die Schnittmenge der Locksets leer, so halten beide Segmente keine gemeinsamen Locks. Würden sie einen Lock auf die selbe Speicheradresse teilen, würden sie sich gegenseitig beim Zugriff ausschließen und so könnte kein Data Race entstehen. Dies ist nicht der Fall wenn die Schnittmenge der Locksets beider Segmente leer ist und so wird an dieser Stelle ein Data Race erkannt.
 
+Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib- Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die definition schon weiß dass keine Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen muss nun lediglich die andere Richtung überprüft werden. Weißt nun also das Segment der aktuellen Iterationsstufe keine Happens- Before Relation auf das aktuelle Lese Segment wissen wir dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
 
