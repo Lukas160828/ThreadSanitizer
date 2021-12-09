@@ -14,7 +14,9 @@
   * [false negatives](#false-negatives)
 4. Verwendeter Algorithmus
   * [Instrumentation](#instrumentation)
-  * [Data Race erkennung](#data-race-erkennung)
+  * [Die Hybrid State Machine](#die-hybrid-state-machine)
+  * [Umgang mit Lese- und Schreibzugriffen](#umgang-mit-lese--und-schreibzugriffen)
+  * [Die Überprüfung auf Data Races](#die-überprüfung-auf-data-races)
 
 ***
 # 1. Grundlagen zu Data Races
@@ -204,8 +206,15 @@ Ein Beispiel für einen Redundanten Zufriff ist:
 * Lesezugriffe die sequentiell vor Schreibzugriffen stattfinden
 
 Weitere wichtige Ereignisse sind Synchronisierende Events, wie die Aneignung oder Freigabe eines Locks. Dies ist wichtig um die Happens- Before Relation festzustellen.
+## Die Hybrid State Machine
+Der Zustand von ThreadSanitizer besteht aus einem globalem Zustand und einzelne Zustände für jede Speicheradresse auf die zugegriffen wird. Der globale Zustand beschreibt die bisher beobachteten Synchronisationsevents. 
 
-## 
+Für jede Speicheradresse gibt es einen sogenannten per-ID Zustand, in welchem alle Lese- und Schreibzugriffe aus allen Threads auf die jeweilige Adresse gespeichert werden. Diese werden in einem Schreibzugriff Segment Set (SS<sub><sup>wr</sup></sub>) und einem Lesezugriff Segmet Set (LS<sub><sup>rd</sup></sub>) gespeichert. Man speichert in dem SS<sub><sup>rd</sup></sub> nur Segmente ab bei denen man keine Happens- Before Relation zu einem Lesezugriff Segment aus dem LS<sub><sup>wr</sup></sub> definiert werden kann. Der Grund dafür ist, dass nur wenn keine partielle Ordnung hergestellt werden kann, durch die Happens- Before Relation ein Data Race erkannt werden kann.
+
+Der globale, und per-ID Zustand wird nach jedem Speicherzugriff aktualisiert und überprüft ob ein Data Race vorliegt. Mehr dazu im nächsten Abschnitt.
+## Umgang mit Lese- und Schreibzugriffen
+
+## Die Überprüfung auf Data Races
 
 
 
