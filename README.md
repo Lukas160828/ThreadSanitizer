@@ -10,8 +10,6 @@
   * [Anwendungen von ThreadSanitizer](#anwendung-von-threadsanitizer)
 3. Benutzung von ThreadSanitizer
   * [Report Format](#report-format)
-  * [false positives](#false-positives)
-  * [false negatives](#false-negatives)
 4. Verwendeter Algorithmus
   * [Instrumentation](#instrumentation)
   * [Die Hybrid State Machine](#die-hybrid-state-machine)
@@ -51,7 +49,7 @@ Hierzu zählen:
 2. Eine Übersicht wo und wie ThreadSanitizer zur Verfügung gestellt wird. Es existiert eine Liste über die unterstützten Platformen. Die Liste wurde jedoch zuletzt im Dezember 2018 aktualisiert. Es existiert ein Link der auf eine aktuelle Liste zeigen soll, er führt jedoch lediglich auf ein Github Repository in dem das [Header File von ThreadSanitizer](https://github.com/llvm-mirror/compiler-rt/blob/master/lib/tsan/rtl/tsan_platform.h) liegt. Hierbei werden checks über die Platform im Code ausgeführt, welche man sich anschauen kann. Heißt hier ist die vollständige Liste theoretisch vorhanden, es ist jedoch nicht direkt ersichtlich da es nicht gesammelt verfügbar ist.
 3. Ein [Beispiel]() zur Benutzung von ThreadSanitizer, sowie eine Auflistung der vorhandenen Flags und Blacklist 
 
-4. Technische Hinweise zur Verwendung von ThreadSanitizer. Hierzu zählt dass ThreadSanitizer hauptsächlich nur mit instrumented- code funktioniert. Der Grund dafür ist, dass ThreadSanitizer auf die Informationen aus dem Stack Trace angewiesen ist. Bei non- instrumented Code kann dies nicht gewährleistet werden und somit ist auch der Erfolg von ThreadSanitizer ungewiss. 
+4. Technische Hinweise zur Verwendung von ThreadSanitizer. Hierzu zählt dass ThreadSanitizer nur mit Instrumented- Code funktioniert. Der Grund dafür ist, dass ThreadSanitizer auf die Informationen aus dem Stack Trace angewiesen ist. Bei non- Instrumented Code kann dies nicht gewährleistet werden und somit ist auch der Erfolg von ThreadSanitizer ungewiss. 
 5. Häufig gestellte Fragen
 
 Quelle 2: [Clang 13 ThreadSanitizer Dokumentation](https://clang.llvm.org/docs/ThreadSanitizer.html)
@@ -92,7 +90,7 @@ int main() {
   pthread_join(t, 0);
 }
 ```
-Dieses Beispiel finde ich nicht so gelungen da es nicht erklärt wird wodurch hier das Data Race entsteht. Hierbei wären ein paar Kommentare für die Übersicht hilfreich. Auch könnte man den Variablen Aussagekräftigere Namen geben als nur Buchstaben.
+Dieses Beispiel finde ich nicht so gelungen da es nicht erklärt wird wodurch hier das Data Race entsteht. Hierbei wären ein paar Kommentare für die Übersicht hilfreich. Auch könnte man den Variablen aussagekräftigere Namen geben als nur Buchstaben.
 
 Eine Übersicht wie man ThreadSanitizer verwenden kann. Das Beispiel hierfür ist gut gewählt, da es sehr intuitiv verständlich ist. 
 
@@ -122,7 +120,7 @@ int main() {
   pthread_join(t[1], NULL);
 }
 ```
-Auch wird die Konsole gezeigt, welche Eingaben getätigt wurden und welches Ergebnis erzielt wurde. Dies führt dazu dass man es gut nachstellen und einen Beispiel Anwendungsfall hat. 
+Auch wird die Konsole gezeigt, also welche Eingaben getätigt wurden und welches Ergebnis erzielt wurde. Dies führt dazu dass man es gut nachstellen und einen Beispielhaften Anwendungsfall hat. 
 
 ```
 $ clang++ simple_race.cc -fsanitize=thread -fPIE -pie -g
@@ -170,7 +168,7 @@ WARNING: ThreadSanitizer: data race (pid=9337)
     #0 pthread_create tsan_interceptors.cc:683 (exe+0x00000000de83)
     #1 main simple_stack2.cc:40 (exe+0x000000003dd6)
 ```
-Die ersten Beiden Blöcke beinhalten die Zugriffe, die auf die selbe Adresse ausgeführt werden aus unterschiedlichen Threads heraus. Hierdurch wird der Fehler hervorgerufen.
+Die ersten Beiden Blöcke beinhalten die Zugriffe, die auf die selbe Adresse ausgeführt werden, aus unterschiedlichen Threads heraus. Hierdurch wird der Fehler hervorgerufen.
 
 Der zweite Block beinhaltet Informationen zu den Threads die am Problem beteiligt sind. In diesem Fall ist es neben dem main thread, welcher nicht aufgezählt wird, nur der Thread T1.
 
@@ -198,7 +196,7 @@ Zusätzlich gibt es auch Blöcke die Informationen über eine Synchronisation vo
 # 4. Verwendeter Algorithmus
 Im folgenden werde ich die Funktionsweise des Algorithmus von ThreadSanitizer zur Erkennugn von Data Races textuell beschreiben. Eine Formale Definition findet man [hier](http://www.cs.columbia.edu/~junfeng/11fa-e6121/papers/thread-sanitizer.pdf) (Seite 63 ff).
 ## Instrumentation
-ThreadSanitizer betrachtet den Programmfluss als Abfolge von Events. Die wichtigsten Events zur Erkennung von Data Races sind zum einen Zugriffe auf Speicher wie schreiben oder lesen. Hier wird Grundlegend jeder Zugriff instrumentiert, außer wenn man weiß dass dadurch kein Data Race entstehen kann oder er redundant ist.
+ThreadSanitizer betrachtet den Programmfluss als Abfolge von Events. Die wichtigsten Events zur Erkennung von Data Races sind zum einen Zugriffe auf den Speicher wie schreiben oder lesen. Hier wird grundlegend jeder Zugriff instrumentiert, außer wenn man weiß dass dadurch kein Data Race entstehen kann oder er redundant ist.
 
 Ein Beispiel für Zugriffe ohne Data Race ist:
 * Lesezugriffe auf globale Konstanten
@@ -214,7 +212,7 @@ Für jede Speicheradresse gibt es einen sogenannten per-ID Zustand, in welchem a
 
 Der globale, und per-ID Zustand wird nach jedem Speicherzugriff aktualisiert und überprüft ob ein Data Race vorliegt. Mehr dazu im nächsten Abschnitt.
 ## Umgang mit Lese- und Schreibzugriffen
-Wird erkannt dass ein Zugriff auf den Speicher stattfindet, wird ein Handler aufgerufen mit der Thread ID des Threads der darauf zugreift, der ID des Speicherorts auf den zugegriffen wird und einem Flag ob es ein Lese- oder Schreibzugriff ist.
+Wird erkannt dass ein Zugriff auf den Speicher stattfindet, wird ein Handler aufgerufen mit der Thread ID des Threads der auf die Resource zugreift, der ID des Speicherorts auf den zugegriffen wird, und einem Flag ob es ein Lese- oder Schreibzugriff ist.
 
 Im Handler wird zunächst über die Thread ID das aktuelle Segment und über die ID des Speicherorts der dazugehörige per-ID State geladen. Dort stehen alle bisher erfolgten Lese- und Schreibzugriffe (SS<sub><sup>rd</sup></sub>, SS<sub><sup>wr</sup></sub>), zwischen denen man keine Happens- Before Relation definieren kann. 
 
@@ -223,9 +221,6 @@ Nun werden SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> um den Aufr
 ## Die Überprüfung auf Data Races
 Die Überprüfung ob ein Data Race erkannt werden kann findet nach jedem Zugriff auf den Speicher statt, nachdem Segment Sets SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> aktualisiert wurden. 
 
-Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib Segment mit jedem anderen Schreib Segment. Hierzu wird zuerst überprüft ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens- Before Relation definieren kann. Falls ja, dann sagt man dass kein Data Race vorliegt. Kann hierdurch keine Reihenfolge definieren werden, werden die Locksets beider Schreib Segmente verglichen. Ist die Schnittmenge der Locksets leer, so halten beide Segmente keine gemeinsamen Locks. Würden sie einen Lock auf die selbe Speicheradresse teilen, würden sie sich gegenseitig beim Zugriff ausschließen und so könnte kein Data Race entstehen. Dies ist nicht der Fall wenn die Schnittmenge der Locksets beider Segmente leer ist und so wird an dieser Stelle ein Data Race erkannt.
+Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib-Segment mit jedem anderen Schreib-Segment. Hierzu wird zuerst überprüft ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens- Before Relation definieren kann. Falls ja, dann weiß man, dass kein Data Race vorliegt. Kann hierdurch keine Reihenfolge definieren werden, werden die Locksets beider Schreibsegmente verglichen. Ist die Schnittmenge der Locksets leer, so halten beide Segmente keine gemeinsamen Locks. Würden sie einen Lock auf die selbe Speicheradresse teilen, würden sie sich gegenseitig beim Zugriff ausschließen und so könnte kein Data Race entstehen. Dies ist nicht der Fall wenn die Schnittmenge der Locksets beider Segmente leer ist und so wird an dieser Stelle ein Data Race erkannt.
 
-Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib- Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die definition schon weiß dass keine Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen muss nun lediglich die andere Richtung überprüft werden. Weißt nun also das Segment der aktuellen Iterationsstufe keine Happens- Before Relation auf das aktuelle Lese Segment wissen wir dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
-
-
-
+Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese-Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die Definition schon weiß dass keine Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen muss nun lediglich die andere Richtung überprüft werden. Weißt nun also das Segment der aktuellen Iterationsstufe keine Happens- Before Relation auf das aktuelle Lese-Segment wissen wir dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
