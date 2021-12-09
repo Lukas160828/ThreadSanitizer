@@ -213,6 +213,11 @@ Für jede Speicheradresse gibt es einen sogenannten per-ID Zustand, in welchem a
 
 Der globale, und per-ID Zustand wird nach jedem Speicherzugriff aktualisiert und überprüft ob ein Data Race vorliegt. Mehr dazu im nächsten Abschnitt.
 ## Umgang mit Lese- und Schreibzugriffen
+Wird erkannt dass ein Zugriff auf den Speicher stattfindet, wird ein Handler aufgerufen mit der Thread ID des Threads der darauf zugreift, der ID des Speicherorts auf den zugegriffen wird und einem Flag ob es ein Lese- oder Schreibzugriff ist.
+
+Im Handler wird zunächst über die Thread ID das aktuelle Segment und über die ID des Speicherorts der dazugehörige per-ID State geladen. Dort stehen alle bisher erfolgten Lese- und Schreibzugriffe (SS<sub><sup>rd</sup></sub>, SS<sub><sup>wr</sup></sub>), zwischen denen man keine Happens- Before Relation definieren kann. 
+
+Nun werden SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> um den Aufruf erweitert, so dass sie immer noch ihren Definitionen entsprechen. Das bedeutet dass man für kein Segment aus SS<sub><sup>rd</sup></sub> eine Happens- Before Relation auf ein Segment aus SS<sub><sup>wr</sup></sub>) definieren kann. Anhand der aktuellen Segment Sets wird nun der per-ID Zustand aktualisiert und überprüft ob ein Data Race erkannt werden kann.
 
 ## Die Überprüfung auf Data Races
 
