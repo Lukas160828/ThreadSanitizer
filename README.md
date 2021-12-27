@@ -15,8 +15,8 @@
   * [Die Hybrid State Machine](#die-hybrid-state-machine)
   * [Umgang mit Lese- und Schreibzugriffen](#umgang-mit-lese--und-schreibzugriffen)
   * [Die Überprüfung auf Data Races](#die-überprüfung-auf-data-races)
-  * [Beispiel 1](#beispiel1)
-  * [Beispiel 2](#beispiel2)
+  * [Beispiel bei dem der Algorithmus funktioniert](#beispiel-bei-dem-der-algorithmus-funktioniert)
+  * [Beispiel bei dem der Algorithmus fehlschlägt](#beispiel-bei-dem-der-algorithmus-fehlschlägt)
 
 ***
 # 1. Grundlagen zu Data Races
@@ -227,12 +227,12 @@ Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib-
 
 Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese-Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die Definition schon weiß dass keine Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen muss nun lediglich die andere Richtung überprüft werden. Weißt nun also das Segment der aktuellen Iterationsstufe keine Happens- Before Relation auf das aktuelle Lese-Segment wissen wir dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
 
-## Beispiel 1:
+## Beispiel bei dem der Algorithmus funktioniert:
 <picture>
   <img src= bsp1(1).png>
 </picture>
 
-Beim ersten Beispiel handelt es sich lediglich um zwei Lesezugriffe auf die selbe Resource aus verschiedenen Threads heraus. Dieser Fall tritt Bei unserem Vorherigen [Beispiel](beispiel1) auf. Hierbei wird ohne Absicherungen wie Locks durchgeführt und weißt somit das Potential für ein Data Race auf. 
+Beim ersten Beispiel handelt es sich lediglich um zwei Lesezugriffe auf die selbe Resource aus verschiedenen Threads heraus. Dieser Fall tritt Bei unserem Vorherigen [Beispiel](beispiel1) auf. Die Zugriffe werden ohne Absicherungen wie Locks durchgeführt und weißen somit das Potential für ein Data Race auf. 
 
 Schritt 1:
 
@@ -240,25 +240,38 @@ Schritt 1:
   <img src= bsp1(2).png>
 </picture>
 
-Der erste Schreibzugriff wurde erkannt und ThreadSanitizer aufgerufen. Nun wird der per-ID State(bestehend aus SSrd und SSwr) aktualisiert. Hierbei 
+Der erste Schreibzugriff wurde erkannt und ThreadSanitizer aufgerufen.
 
 <picture>
   <img src= bsp1state1.png>
 </picture>
 
+ Nun wird der per-ID State(bestehend aus SSrd und SSwr) aktualisiert. Der aktuelle Zugriff wird zu SSwr hinzugefügt als Schreibzugriff. Der globale State wird zusätzlich auch angepasst, indem hier die vom Thread zum Zeitpunkt des Zugriffs gehaltenen Locks notiert werden. In diesem Beispiel hält er keine Locks. 
+
+
 <picture>
   <img src= bsp1(3).png>
 </picture>
+
+Hier wird der zweite Schreibzugriff erkannt, bei dem jetzt ein Data Race auftreten kann.
 
 <picture>
   <img src= bsp1state2.png>
 </picture>
 
-## Beispiel 2:
+Zuerst wird überprüft ob der aktuelle Zugriff in einer Happens-Before Relation zu einem existierenden Eintrag steht. Da dies nicht der Fall ist, wird kein bestehender Eintrag rausgelöscht und SSwr um den neuen Zugriff ergänzt.Im globalen State wird notiert dass der Thread keinen Lock hält zum Zeitpunkt des Zugriffs.
+
+Nun wird überprüft ob mit im aktuellen State ein Data Race erkannt werden kann. Dies wird getan indem als erstes der neue Zugriff mit allen anderen Schreibzugriffen auf die selbe Resource(Also allen Einträgen aus SSwr) verglichen wird. Als erstes wird der Zugriff von T2 mit dem Zugriff von T1 verglichen. Dabei kann keine Happens-Before Relation zwischen den Zugriffen definiert werden. Anschließend werden noch die Locksets der beiden Zugriffe verglichen, welche Schnittmenge leer ist. 
+
+Dies Bedeutet dass es zwei Zugriffe auf die gleiche Resourrce gibt die nicht per Happens-Before Relation geordnet sind und keine gemeinsamen Locks teilen. Dadurch geht man davon aus dass an dieser Stelle ein Data Race auftreten kann und ThreadSanitizer berichtet dies.
+
+## Beispiel bei dem der Algorithmus fehlschlägt:
 
 <picture>
   <img src= bsp2(1).png>
 </picture>
+
+
 
 <picture>
   <img src= bsp2(2).png>
