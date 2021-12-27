@@ -232,7 +232,7 @@ Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segm
   <img src= bsp1(1).png>
 </picture>
 
-Beim ersten Beispiel handelt es sich lediglich um zwei Lesezugriffe auf die selbe Resource aus verschiedenen Threads heraus. Dieser Fall tritt Bei unserem Vorherigen [Beispiel](beispiel1) auf. Die Zugriffe werden ohne Absicherungen wie Locks durchgeführt und weißen somit das Potential für ein Data Race auf. 
+Beim ersten Beispiel handelt es sich lediglich um zwei Lesezugriffe auf die selbe Resource aus verschiedenen Threads heraus. Dieser Fall tritt Bei unserem Vorherigen [Beispiel](#beispiel1) auf. Die Zugriffe werden ohne Absicherungen wie Locks durchgeführt und weißen somit das Potential für ein Data Race auf. 
 
 Schritt 1:
 
