@@ -271,25 +271,37 @@ Dies Bedeutet dass es zwei Zugriffe auf die gleiche Resourrce gibt die nicht per
   <img src= bsp2(1).png>
 </picture>
 
-
+In diesem Beispiel finden auch zwei Schreibzugriffe aus verschiedenen Threads statt. Zusätzlich werden Locks verwendet, die jedoch nicht einen der Zugriffe nicht absichert. 
 
 <picture>
   <img src= bsp2(2).png>
 </picture>
 
+Der erst Schreibzugriff findet statt, bevor der Thread einen Lock hält.
+
 <picture>
   <img src= bsp2state1.png>
 </picture>
 
+Im per-ID State wird der Zugriff ergänzt und im globalen State notiert dass kein Lock gehalten wird.
+
 <picture>
   <img src= bsp2(3).png>
 </picture>
+
+Nun findet der zweite Zugriff statt, welcher durch ein Lock abgesichert wird. 
 
 <picture>
   <img src= bsp2state2.png>
 </picture>
 
 
+Wenn in diesem Fall der per-ID State aktualisiert wird, wird der Zugriff von T2 mit allen anderen Zugriffen verglichen. Beim Vergleich mit dem Zugriff von T1 erkennt ThreadSanitizer hier eine Happens-Before Relation zwischen den Zugriffen, welche jedoch nicht existiert. Eine genauere Erklärung dieses Phänomens findet man [hier](https://sulzmann.github.io/AutonomeSysteme/lec-data-race.html#(4)). Dies führt dazu, dass der Zugriff von T1 aus SSwr herausgenommen wird. Dies liegt daran, da alle Zugriffe die vor einem anderen passieren für die Vergleiche auf die Happens-Before Relation unrelevant sind, wegen der Transitivität.
+
+Nun wenn der aktuelle State auf ein Data Race untersucht wird, werden alle Schreibzugriffpaare auf ein Data Race untersucht. Jedoch ist der erste Zugriff in SSwr nicht mehr vorhanden und somit wird das paar nicht untersucht. 
+
+Über die leere Schnittmenge der Locksets könnte man den Data Race noch erkennen, dazu kommt es jedoch nicht mehr.
+ 
 
 
 
