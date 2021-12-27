@@ -15,7 +15,8 @@
   * [Die Hybrid State Machine](#die-hybrid-state-machine)
   * [Umgang mit Lese- und Schreibzugriffen](#umgang-mit-lese--und-schreibzugriffen)
   * [Die Überprüfung auf Data Races](#die-überprüfung-auf-data-races)
-  * [Beispiel](#beispiel)
+  * [Beispiel 1](#beispiel1)
+  * [Beispiel 2](#beispiel2)
 
 ***
 # 1. Grundlagen zu Data Races
@@ -231,9 +232,15 @@ Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segm
   <img src= bsp1(1).png>
 </picture>
 
+Beim ersten Beispiel handelt es sich lediglich um zwei Lesezugriffe auf die selbe Resource aus verschiedenen Threads heraus. Dieser Fall tritt Bei unserem Vorherigen [Beispiel](beispiel1) auf. Hierbei wird ohne Absicherungen wie Locks durchgeführt und weißt somit das Potential für ein Data Race auf. 
+
+Schritt 1:
+
 <picture>
   <img src= bsp1(2).png>
 </picture>
+
+Der erste Schreibzugriff wurde erkannt und ThreadSanitizer aufgerufen. Nun wird der per-ID State(bestehend aus SSrd und SSwr) aktualisiert. Hierbei 
 
 <picture>
   <img src= bsp1state1.png>
@@ -246,6 +253,8 @@ Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segm
 <picture>
   <img src= bsp1state2.png>
 </picture>
+
+## Beispiel 2:
 
 <picture>
   <img src= bsp2(1).png>
