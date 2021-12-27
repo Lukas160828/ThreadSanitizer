@@ -236,7 +236,15 @@ Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segm
 </picture>
 
 <picture>
+  <img src= bsp1state1.png>
+</picture>
+
+<picture>
   <img src= bsp1(3).png>
+</picture>
+
+<picture>
+  <img src= bsp1state2.png>
 </picture>
 
 <picture>
@@ -248,7 +256,15 @@ Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segm
 </picture>
 
 <picture>
+  <img src= bsp2state1.png>
+</picture>
+
+<picture>
   <img src= bsp2(3).png>
+</picture>
+
+<picture>
+  <img src= bsp2state2.png>
 </picture>
 
 
