@@ -15,6 +15,7 @@
   * [Die Hybrid State Machine](#die-hybrid-state-machine)
   * [Umgang mit Lese- und Schreibzugriffen](#umgang-mit-lese--und-schreibzugriffen)
   * [Die Überprüfung auf Data Races](#die-überprüfung-auf-data-races)
+  * [Beispiel](#beispiel)
 
 ***
 # 1. Grundlagen zu Data Races
@@ -224,3 +225,34 @@ Die Überprüfung ob ein Data Race erkannt werden kann findet nach jedem Zugriff
 Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib-Segment mit jedem anderen Schreib-Segment. Hierzu wird zuerst überprüft ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens- Before Relation definieren kann. Falls ja, dann weiß man, dass kein Data Race vorliegt. Kann hierdurch keine Reihenfolge definieren werden, werden die Locksets beider Schreibsegmente verglichen. Ist die Schnittmenge der Locksets leer, so halten beide Segmente keine gemeinsamen Locks. Würden sie einen Lock auf die selbe Speicheradresse teilen, würden sie sich gegenseitig beim Zugriff ausschließen und so könnte kein Data Race entstehen. Dies ist nicht der Fall wenn die Schnittmenge der Locksets beider Segmente leer ist und so wird an dieser Stelle ein Data Race erkannt.
 
 Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese-Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die Definition schon weiß dass keine Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen muss nun lediglich die andere Richtung überprüft werden. Weißt nun also das Segment der aktuellen Iterationsstufe keine Happens- Before Relation auf das aktuelle Lese-Segment wissen wir dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
+
+## Beispiel 1:
+<picture>
+  <img src= bsp1(1).png>
+</picture>
+
+<picture>
+  <img src= bsp1(2).png>
+</picture>
+
+<picture>
+  <img src= bsp1(3).png>
+</picture>
+
+<picture>
+  <img src= bsp2(1).png>
+</picture>
+
+<picture>
+  <img src= bsp2(2).png>
+</picture>
+
+<picture>
+  <img src= bsp2(3).png>
+</picture>
+
+
+
+
+
+
