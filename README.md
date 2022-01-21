@@ -240,7 +240,8 @@ Schritt 1:
   <img src= bsp1(2).png>
 </picture>
 
-Der erste Schreibzugriff wurde erkannt und ThreadSanitizer aufgerufen.
+Der erste Schreibzugriff " Global++" von T1 wurde erkannt und ThreadSanitizer aufgerufen.
+
 
 <picture>
   <img src= bsp1state1.png>
@@ -252,7 +253,7 @@ Der erste Schreibzugriff wurde erkannt und ThreadSanitizer aufgerufen.
   <img src= bsp1(3).png>
 </picture>
 
-Nun wird der zweite Schreibzugriff erkannt, bei dem jetzt ein Data Race auftreten kann.
+Nun wird der zweite Schreibzugriff "Global--" von T2 erkannt, bei welchem jetzt ein Data Race auftreten kann.
 
 <picture>
   <img src= bsp1state2.png>
@@ -311,7 +312,7 @@ Der aufgezeichnete Trace sei wie folgt:
   <img src= bsp2(2).png>
 </picture>
 
-Der erst Schreibzugriff findet statt, bevor der Thread einen Lock hält.
+Der erst Schreibzugriff von T1 findet statt, bevor der Thread einen Lock hält.
 
 <picture>
   <img src= bsp2state1.png>
@@ -323,7 +324,7 @@ Der Zugriff wird im per-ID State notiert.
   <img src= bsp2(3).png>
 </picture>
 
-Nun findet der zweite Zugriff statt, welcher durch ein Lock abgesichert wird. 
+Nun findet der Zugriff von T2 statt, welcher durch ein Lock abgesichert wird. 
 
 <picture>
   <img src= bsp2state2.png>
