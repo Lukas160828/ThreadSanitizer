@@ -15,8 +15,8 @@
   * [Die Hybrid State Machine](#die-hybrid-state-machine)
   * [Umgang mit Lese- und Schreibzugriffen](#umgang-mit-lese--und-schreibzugriffen)
   * [Die Überprüfung auf Data Races](#die-überprüfung-auf-data-races)
-  * [Beispiel bei dem der Algorithmus funktioniert](#beispiel-bei-dem-der-algorithmus-funktioniert)
-  * [Beispiel bei dem der Algorithmus fehlschlägt](#beispiel-bei-dem-der-algorithmus-fehlschlägt)
+  * [Beispiel für ein false negative](#beispiel-für-ein-false-positive)
+  * [Beispiel für ein false positive](#beispiel-für-ein-false-negative)
 5. Fazit
 
 ***
@@ -211,23 +211,22 @@ Weitere wichtige Ereignisse sind Synchronisierende Events, wie die Aneignung ode
 ## Die Hybrid State Machine
 Der Zustand von ThreadSanitizer besteht aus einem globalem Zustand und einzelnen Zuständen für jede Speicheradresse, auf die zugegriffen wird. Der globale Zustand beschreibt die bisher beobachteten Synchronisationsevents. 
 
-Für jede Speicheradresse gibt es einen sogenannten per-ID Zustand, in welchem alle Lese- und Schreibzugriffe aus allen Threads auf die jeweilige Adresse gespeichert werden. Diese werden in einem Schreibzugriff Segment-Set (SS<sub><sup>wr</sup></sub>) und einem Lesezugriff Segment-Set (LSrd) gespeichert. Man speichert in dem SSre nur Segmente ab, bei denen keine Happens-Before Relation zu einem Lesezugriffs-Segment aus dem LSwr definiert werden kann. Der Grund dafür ist, dass nur wenn keine partielle Ordnung hergestellt werden kann, durch die Happens- Before Relation ein Data Race erkannt werden kann.
+Für jede Speicheradresse gibt es einen sogenannten per-ID Zustand, in welchem alle Lese- und Schreibzugriffe aus allen Threads auf die jeweilige Adresse gespeichert werden. Diese werden in einem Schreibzugriff Segment-Set (SS<sub><sup>wr</sup></sub>) und einem Lesezugriff Segment-Set (SS<sub><sup>rd</sup></sub>) gespeichert. Man speichert in dem SS<sub><sup>rd</sup></sub> nur Segmente ab, bei denen keine Happens-Before Relation zu einem Lesezugriffs-Segment aus dem SS<sub><sup>wr</sup></sub> definiert werden kann. Der Grund dafür ist, dass nur wenn keine partielle Ordnung hergestellt werden kann, durch die Happens- Before Relation ein Data Race erkannt werden kann.
 
 Der globale, und per-ID Zustand wird nach jedem Speicherzugriff aktualisiert und überprüft, ob ein Data Race vorliegt. Mehr dazu im nächsten Abschnitt.
 ## Umgang mit Lese- und Schreibzugriffen
-Wird erkannt, dass ein Zugriff auf den Speicher stattfindet, wird ein Handler aufgerufen mit der Thread ID des Threads, der auf die Ressource zugreift, die ID des Speicherorts auf den zugegriffen wird, und einem Flag ob es ein Lese- oder Schreibzugriff ist.
+Wird erkannt, dass ein Zugriff auf den Speicher stattfindet, wird ein Handler aufgerufen mit der ID des Threads, der auf die Ressource zugreift, die ID des Speicherorts auf den zugegriffen wird, und einem Flag ob es ein Lese- oder Schreibzugriff ist.
 
-Im Handler wird zunächst über die Thread ID das aktuelle Segment und über die ID des Speicherorts der dazugehörige per-ID State geladen. Dort stehen alle bisher erfolgten Lese- und Schreibzugriffe (SSre, SS<sub><sup>wr</sup></sub>), zwischen denen man keine Happens-Before Relation definieren kann. 
+Im Handler wird zunächst über die Thread ID das aktuelle Segment und über die ID des Speicherorts der dazugehörige per-ID State geladen. Dort stehen alle bisher erfolgten Lese- und Schreibzugriffe (SS<sub><sup>rd</sup></sub>, SS<sub><sup>wr</sup></sub>), zwischen denen man keine Happens-Before Relation definieren kann. 
 
 Nun werden SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> um den Aufruf erweitert, so dass sie immer noch ihren Definitionen entsprechen. Das bedeutet, dass man für kein Segment aus SS<sub><sup>rd</sup></sub> eine Happens-Before Relation auf ein Segment aus SS<sub><sup>wr</sup></sub> definieren kann. Anhand der aktuellen Segment-Sets wird nun der per-ID Zustand aktualisiert und überprüft, ob ein Data Race erkannt werden kann.
 
 ## Die Überprüfung auf Data Races
 Die Überprüfung, ob ein Data Race erkannt werden kann, findet nach jedem Zugriff auf den Speicher statt, nachdem Segment-Sets SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub> aktualisiert wurden. 
 
-Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib-Segment mit jedem anderen Schreib-Segment. Hierzu wird zuerst überprüft, ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens-Before Relation definieren kann. Falls ja, dann weiß man, dass kein Data Race vorliegt. Kann hierdurch keine Reihenfolge definieren werden, werden die Locksets beider Schreibsegmente verglichen. Ist die Schnittmenge der Locksets leer, so halten beide Segmente keine gemeinsamen Locks. Würden sie einen Lock auf dieselbe Speicheradresse teilen, würden sie sich gegenseitig beim Zugriff ausschließen und so könnte kein Data Race entstehen. Dies ist nicht der Fall, wenn die Schnittmenge der Locksets beider Segmente leer ist und so wird an dieser Stelle ein Data Race erkannt.
+Zuerst iteriert man über SS<sub><sup>wr</sup></sub> und vergleicht das Schreib-Segment mit jedem anderen Schreib-Segment. Hierzu wird zuerst überprüft, ob man zwischen den beiden Segmenten in der aktuellen Iterationsstufe eine Happens-Before Relation definieren kann. Falls ja, dann geht man davon aus, dass kein Data Race vorliegt.
 
-Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese-Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die Definition schon weiß, dass keines der Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen, muss nun lediglich die andere Richtung überprüft werden. Weist nun also das Segment der aktuellen Iterationsstufe keine Happens-Before Relation auf das aktuelle Lese-Segment auf, wissen wir, dass sie ungeordnet sind. Ist nun zusätzlich die Schnittmenge der Locksets leer, so wird ein Data Race erkannt.
-
+Nachdem man nun das Segment der aktuellen Iterationsstufe mit allen Schreib-Segmenten in SS<sub><sup>wr</sup></sub> verglichen hat, vergleicht man es nun noch mit allen Lese-Segmenten in SS<sub><sup>rd</sup></sub>. Da man durch die Definition schon weiß, dass keines der Segmente aus SS<sub><sup>rd</sup></sub> eine Relation auf Segmente aus SS<sub><sup>wr</sup></sub> aufweisen, muss nun lediglich die andere Richtung überprüft werden. Weist nun also das Segment der aktuellen Iterationsstufe keine Happens-Before Relation auf das aktuelle Lese-Segment auf, wissen wir, dass sie ungeordnet sind. Ist dies der Fall, wird ein Data Race berichtet.
 ## Beispiel bei dem der Algorithmus funktioniert:
 <picture>
   <img src= bsp1(1).png>
@@ -247,28 +246,60 @@ Der erste Schreibzugriff wurde erkannt und ThreadSanitizer aufgerufen.
   <img src= bsp1state1.png>
 </picture>
 
- Nun wird der per-ID State(bestehend aus SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub>) aktualisiert. Der aktuelle Zugriff wird als Schreibzugriff zu SS<sub><sup>wr</sup></sub> hinzugefügt. Der globale State wird zusätzlich auch angepasst, indem hier die vom Thread zum Zeitpunkt des Zugriffs gehaltenen Locks notiert werden. In diesem Beispiel hält er keine Locks. 
-
+ Nun wird der per-ID State(bestehend aus SS<sub><sup>rd</sup></sub> und SS<sub><sup>wr</sup></sub>) aktualisiert. Der aktuelle Zugriff wird als Schreibzugriff zu SS<sub><sup>wr</sup></sub> hinzugefügt.
 
 <picture>
   <img src= bsp1(3).png>
 </picture>
 
-Hier wird der zweite Schreibzugriff erkannt, bei dem jetzt ein Data Race auftreten kann.
+Nun wird der zweite Schreibzugriff erkannt, bei dem jetzt ein Data Race auftreten kann.
 
 <picture>
   <img src= bsp1state2.png>
 </picture>
 
-Zuerst wird überprüft, ob der aktuelle Zugriff in einer Happens-Before Relation zu einem existierenden Eintrag steht. Da dies nicht der Fall ist, wird kein bestehender Eintrag herausgelöscht und SS<sub><sup>wr</sup></sub> um den neuen Zugriff ergänzt. Im globalen State wird notiert, dass der Thread keinen Lock hält zum Zeitpunkt des Zugriffs.
+Zuerst wird überprüft, ob der aktuelle Zugriff in einer Happens-Before Relation zu einem existierenden Eintrag steht. Da keine übergreifenden Locks zwischen den Threads verwendet werden, kann keine Abhängigkeit zwischen den Zugriffen festgestellt werden. Dadurch wird kein bestehender Eintrag herausgelöscht und SS<sub><sup>wr</sup></sub> um den neuen Zugriff ergänzt.
 
-Nun wird überprüft, ob im aktuellen State ein Data Race erkannt werden kann. Dies wird getan, indem als erstes der neue Zugriff mit allen anderen Schreibzugriffen auf dieselbe Ressource(Also allen Einträgen aus SS<sub><sup>wr</sup></sub>) verglichen wird. Als erstes wird der Zugriff von T2 mit dem Zugriff von T1 verglichen. Dabei kann keine Happens-Before Relation zwischen den Zugriffen definiert werden. Anschließend werden noch die Locksets der beiden Zugriffe verglichen, welche Schnittmenge leer ist. 
+Nun wird überprüft, ob im aktuellen State ein Data Race erkannt werden kann. Dies wird getan, indem als erstes der neue Zugriff mit allen anderen Schreibzugriffen auf dieselbe Ressource(Also allen Einträgen aus SS<sub><sup>wr</sup></sub>) verglichen wird. Als erstes wird der Zugriff von T2 mit dem Zugriff von T1 verglichen. Dabei kann keine Happens-Before Relation zwischen den Zugriffen definiert werden.
 
-Dies Bedeutet, dass es zwei Zugriffe auf dieselbe Ressource gibt, die nicht per Happens-Before Relation geordnet sind und keine gemeinsamen Locks teilen. Dadurch geht man davon aus, dass an dieser Stelle ein Data Race auftreten kann und ThreadSanitizer berichtet dies.
+Dies Bedeutet, dass es zwei Zugriffe auf dieselbe Ressource gibt, die nicht per Happens-Before Relation geordnet sind. Dadurch geht man davon aus, dass an dieser Stelle ein Data Race auftreten kann und ThreadSanitizer berichtet dies.
 
 Einen Source Code der diesen Ausführungstrace erzeugen kann, finden sie in dem File Data_Race_Beispiel_2.cpp.
 
-## Beispiel bei dem der Algorithmus fehlschlägt:
+## Beispiel für ein false negative:
+Der folgende Code zeigt ein Beispiel für ein Programm was ein potentiellen Data Race aufweißt, es jedoch auch eine Ausführungsreihenfolge existiert bei welcher ThreadSanitizer diesen nicht erkennt.
+
+```cpp
+#include <pthread.h>
+#include <stdio.h>
+#include <mutex>
+
+int Global;
+std::mutex m;
+
+void *Thread1(void *x) {
+  Global = 1;
+  m.lock();
+  m.unlock();
+  return NULL;
+}
+
+void *Thread2(void *x) {
+  m.lock();
+  Global = 2;
+  m.unlock();
+  return NULL;
+}
+
+int main() {
+  pthread_t t[2];
+  pthread_create(&t[0], NULL, Thread1, NULL);
+  pthread_create(&t[1], NULL, Thread2, NULL);
+  pthread_join(t[0], NULL);
+  pthread_join(t[1], NULL);
+}
+```
+Der aufgezeichnete Trace sei wie folgt:
 
 <picture>
   <img src= bsp2(1).png>
@@ -286,7 +317,7 @@ Der erst Schreibzugriff findet statt, bevor der Thread einen Lock hält.
   <img src= bsp2state1.png>
 </picture>
 
-Im per-ID State wird der Zugriff ergänzt und im globalen State notiert, dass kein Lock gehalten wird.
+Der Zugriff wird im per-ID State notiert.
 
 <picture>
   <img src= bsp2(3).png>
@@ -299,18 +330,120 @@ Nun findet der zweite Zugriff statt, welcher durch ein Lock abgesichert wird.
 </picture>
 
 
-Wenn in diesem Fall der per-ID State aktualisiert wird, wird der Zugriff von T2 mit allen anderen Zugriffen verglichen. Beim Vergleich mit dem Zugriff von T1 erkennt ThreadSanitizer hier eine Happens-Before Relation, zwischen den Zugriffen, welche jedoch nicht existiert. Eine genauere Erklärung dieses Phänomens findet man [hier](https://sulzmann.github.io/AutonomeSysteme/lec-data-race.html#(4)). Dies führt dazu, dass der Zugriff von T1 aus SS<sub><sup>wr</sup></sub> herausgenommen wird. Dies liegt daran, da alle Zugriffe die vor einem anderen passieren für die Vergleiche auf die Happens-Before Relation irrelevant sind, anhand der Transitivität.
+Wenn in diesem Fall der per-ID State aktualisiert wird, wird der Zugriff von T2 mit allen anderen Zugriffen verglichen. Beim Vergleich mit dem Zugriff von T1 erkennt ThreadSanitizer hier eine Happens-Before Relation, zwischen den Zugriffen, welche jedoch nicht existiert. Der Grund für dieses Phänomen ist dass die Happens-Before Relation eine Ordnung von w(a) < rel(y) in T1 und acq(y) < w(a) in T2 erkennt. Durch die Transitivität der Happens- Before Relation wird nun fälschlicherweise w(a)T1 < w(a)T2 festgestellt.  Dies führt dazu, dass der Zugriff von T1 aus SS<sub><sup>wr</sup></sub> herausgenommen wird. Dies liegt daran, da alle Zugriffe die geordnet vor einem anderen passieren, für die Vergleiche auf die Happens-Before Relation irrelevant sind, anhand der Transitivität.
 
-Jetzt wenn der aktuelle State auf ein Data Race untersucht wird, werden alle Schreibzugriffspaare auf ein Data Race untersucht. Jedoch ist der erste Zugriff in SS<sub><sup>wr</sup></sub> nicht mehr vorhanden und somit wird das paar nicht untersucht. 
-
-Über die leere Schnittmenge der Locksets könnte man den Data Race erkennen, dazu kommt es jedoch nicht mehr. In diesem Fall erkennt ThreadSanitizer den potentiellen Data Race nicht.
+Wenn nun der aktuelle State auf ein Data Race untersucht wird, werden alle Schreibzugriffspaare auf ein Data Race untersucht. Jedoch ist der erste Zugriff von T1 in SS<sub><sup>wr</sup></sub> nicht mehr vorhanden und somit wird das paar nicht untersucht. Dadurch jedoch dass der Schreibzugriff aus T1 nicht abgesichert ist, existiert eine valide Umordnung des Traces, in der die Schreibzugriffe in direkter nachfolge ausgeführt werden. Dies bedeutet, dass hier ein potentieller Data Race nicht erkannt wird.f
 
 Einen Source Code der diesen Ausführungstrace erzeugen kann finden sie in dem File false_negative.cpp.
+
+Wie dieses Beispiel zeigt, ist der Algorithmus nicht vollständig, da es potentielle Data Races gibt die nicht erkannt werden.
+
+## Beispiel für ein false positive
+Bei folgendem Beispiel wird ThreadSanitizer einen Data Race melden obwohl keiner existiert.
+
+```cpp
+#include <pthread.h>
+#include <stdio.h>
+#include <mutex>
+
+int Global;
+int Condition;
+
+void *Thread1(void *x) {
+  Condition = 1;  
+  Global = 1;
+  return NULL;
+}
+
+void *Thread2(void *x) {
+  if(Condition == 1){
+      Global = 2;
+  }
+  return NULL;
+}
+
+int main() {
+  Condition = 0;  
+  pthread_t t[2];
+  pthread_create(&t[0], NULL, Thread1, NULL);
+  pthread_create(&t[1], NULL, Thread2, NULL);
+  pthread_join(t[0], NULL);
+  pthread_join(t[1], NULL);
+}
+```
+
+Der aufgezeichnete Trace sei wie folgt:
+
+<picture>
+  <img src= bsp3(1).png>
+</picture>
+
+Die in diesem Beispiel von ThreadSanitizer aufgezeichneten Events sind die zwei Schreibzugriffe auf "Condition" und "Global" von T1. Sowie den Lesezugriff auf "Condition" und Schreibzugriff auf "Global" von T2.
+
+<picture>
+  <img src= bsp3(2).png>
+</picture>
+
+Der erste Schreibzugriff "Condition = 1" von T1
+
+<picture>
+  <img src= bsp3state1.png>
+</picture>
+
+Der per-ID State wird um aktuellen Aufruf ergänzt.
+
+<picture>
+  <img src= bsp3(3).png>
+</picture>
+
+Zweiter Schreibzugriff "Global = 1" von T1
+
+<picture>
+  <img src= bsp3state2.png>
+</picture>
+
+Der per-ID State wird um aktuellen Aufruf ergänzt.
+
+<picture>
+  <img src= bsp3(4).png>
+</picture>
+
+T2 liest "Condition" 
+
+<picture>
+  <img src= bsp3state3.png>
+</picture>
+
+Da kein Lock oder ähnliche Synchronisationsmechanismen verwendet wurden, kann zwischen dem neuen Lesezugriff und den bereits vermerkten Schreibzugriffen keine Relation hergestellt werden. Heißt er wird in SSrd aufgenommen.
+
+Beim Check ob ein Data Race stattfindet, der nach jedem erkannten Event durchgeführt wird, wird nun erkannt dass es einen Schreib- und einen Lesezugriff auf die selbe Variable gibt. Weiter sind die beiden Events ungeordnet, heißt hier wird ein Data Race erkannt. Dieser Data Race ist findet tatsächlich statt, der false positive tritt im nächsten Schritt auf.
+
+<picture>
+  <img src= bsp3(5).png>
+</picture>
+
+T2 schreibt "Global = 2"
+
+<picture>
+  <img src= bsp3state4.png>
+</picture>
+
+Wieder kann keine Happens-Before Relation zwischen dem aktuellen Schreibzugriff und den bereits notierten Zugriffen festgestellt werden. Dies bedeutet dass der Schreibzugriff zu SSwr hinzugefügt wird. 
+
+Nun wird wieder auf ein Data Race überprüft. Hierbei wird erkannt dass die Zugriffe T1_w(b) und T2_w(b) die auf die selbe Variable Zugreifen aus verschiedenen Threads heraus. Des weiteren sind die Events ungeordnet nach der Happens-Before Relation. Dies bedeutet dass hier ein Data Race erkannt wird weil ThreadSanitizer davon ausgeht dass es eine valide Umformung des Traces gibt, sodass T1_w(b) und T2_w(b) direkt nebeneinander stehen. Zum Beispiel den folgenden Trace:
+
+<picture>
+  <img src= bsp3(6).png>
+</picture>
+
+Dieser ist jedoch gar nicht möglich, da t2_w(b) nur stattfindet wenn T1_w(a) vorher stattgefunden hat und dadurch die Bedingungsvariable auf 1 gesetzt ist. Heißt hier gibt es eine Abhängigkeit der Ausführungsreihenfolge die durch die Happens-Before Relation nicht erfasst wird. 
+
+ThreadSanitizer meldet ein Data Race das so nicht entstehen kann und foglich nicht existiert.
 
 ***
 
 # 5. Fazit
-Data Races sind ein extrem schwer zu erkennendes Problem. ThreadSanitizer geht dies mit einem Hybriden Algorithmus an, der sowohl die Happens-Before Relation, als auch die Analyse von Locksets verwendet. Hierdurch können im allgemeinen sehr gute Ergebnisse erzielt werden was die Zuverlässigkeit der Erkennung von Data Races angeht. 
+Data Races sind ein extrem schwer zu erkennendes Problem. ThreadSanitizer geht dies mit einem Algorithmus basierend auf der Lamport's Happens-Before Relation an. Der Algorithmus ist nicht Vollständig, da false negatives existieren, und nicht komplett genau, da false positives existieren.  Im allgemeinen können jedoch sehr gute Ergebnisse erzielt werden, was die Zuverlässigkeit der Erkennung von Data Races angeht. 
 
 Die Grundlegende Funktion des Tools ist einfach zu verwenden und man findet im Internet leicht Informationen, wie die Ergebnisse zu Interpretieren sind. 
 

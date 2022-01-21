@@ -6,7 +6,7 @@ int Global;
 std::mutex m;
 
 void *Thread1(void *x) {
-  Global++;
+  Global = 1;
   m.lock();
   m.unlock();
   return NULL;
@@ -14,7 +14,7 @@ void *Thread1(void *x) {
 
 void *Thread2(void *x) {
   m.lock();
-  Global--;
+  Global = 2;
   m.unlock();
   return NULL;
 }
