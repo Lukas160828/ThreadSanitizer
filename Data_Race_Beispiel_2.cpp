@@ -1,4 +1,3 @@
-$ cat simple_race.cc
 #include <pthread.h>
 #include <stdio.h>
 

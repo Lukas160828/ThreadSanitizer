@@ -57,6 +57,7 @@ Hierzu zählen:
 
 Quelle 2: [Clang 13 ThreadSanitizer Dokumentation](https://clang.llvm.org/docs/ThreadSanitizer.html)
 
+
 Man findet auch von Clang eine Dokumentation zu ThreadSanitizer. 
 Sie besteht hauptsächlich aus: 
 1. Eine Einführung wofür das Tool benutzt wird 
@@ -66,6 +67,12 @@ Sie besteht hauptsächlich aus:
 
 Wissen zu Data Races wird hierbei vorrausgesetzt, da diese nicht erklärt werden.
 
+Quelle 3: [ThreadSanitizer – data race detection in practice
+](#http://www.cs.columbia.edu/~junfeng/11fa-e6121/papers/thread-sanitizer.pdf)
+
+Leider findet man auch Beschreibungen der veralteten Version von ThreadSanitizer V1. Die Hauptsächlichen Unterschiede von ThreadSanitizer V1 zu V2 sind zum einen, dass sich der Algorithmus leicht verändert hat. Die Version V1 verwendete einen Hybriden Algorithmus, der sowohl die Happens-Before Relation als auch den Check über Locksets verwendete, um Data Races zu erkennen. Bei der Version V2 wird stattdessen die Lamports Happens-Before Relation verwendet, die die Information über gehaltene Locks verwendet um Relationen über kritische Sektionen hinweg zu erkennen. Dies bedeutet, dass alle kritischen Sektionen die einen gemeinsamen Lock besitzen, total geordnet sind. Dadurch wird der Check auf gemeinsam gehaltene Locks überflüssig.
+
+Des weiteren gab es in der Version V1 sogenannte Dynamic Annotations. Diese wurden verwendet um dem Compiler selbst geschriebene Synchronisationsmechanismen, wie zum Beispiel eine eigene Konditionsvariable zu vermitteln. Hierdurch konnten false positives vermieden werden. Diese Annotationen wurden in Version V2 entfernt.
 ***
 ## Beispiele
 Quelle 1: [ThreadSanitizerCppManual Github](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual)
@@ -415,7 +422,7 @@ T2 liest "Condition"
   <img src= bsp3state3.png>
 </picture>
 
-Da kein Lock oder ähnliche Synchronisationsmechanismen verwendet wurden, kann zwischen dem neuen Lesezugriff und den bereits vermerkten Schreibzugriffen keine Relation hergestellt werden. Heißt er wird in SSrd aufgenommen.
+Da kein Lock oder ähnliche Synchronisationsmechanismen verwendet wurden, kann zwischen dem neuen Lesezugriff und den bereits vermerkten Schreibzugriffen keine Relation hergestellt werden. Heißt er wird in SS<sub><sup>rd</sup></sub> aufgenommen.
 
 Beim Check ob ein Data Race stattfindet, der nach jedem erkannten Event durchgeführt wird, wird nun erkannt dass es einen Schreib- und einen Lesezugriff auf die selbe Variable gibt. Weiter sind die beiden Events ungeordnet, heißt hier wird ein Data Race erkannt. Dieser Data Race ist findet tatsächlich statt, der false positive tritt im nächsten Schritt auf.
 
@@ -429,7 +436,7 @@ T2 schreibt "Global = 2"
   <img src= bsp3state4.png>
 </picture>
 
-Wieder kann keine Happens-Before Relation zwischen dem aktuellen Schreibzugriff und den bereits notierten Zugriffen festgestellt werden. Dies bedeutet dass der Schreibzugriff zu SSwr hinzugefügt wird. 
+Wieder kann keine Happens-Before Relation zwischen dem aktuellen Schreibzugriff und den bereits notierten Zugriffen festgestellt werden. Dies bedeutet dass der Schreibzugriff zu SS<sub><sup>wr</sup></sub> hinzugefügt wird. 
 
 Nun wird wieder auf ein Data Race überprüft. Hierbei wird erkannt dass die Zugriffe T1_w(b) und T2_w(b) die auf die selbe Variable Zugreifen aus verschiedenen Threads heraus. Des weiteren sind die Events ungeordnet nach der Happens-Before Relation. Dies bedeutet dass hier ein Data Race erkannt wird weil ThreadSanitizer davon ausgeht dass es eine valide Umformung des Traces gibt, sodass T1_w(b) und T2_w(b) direkt nebeneinander stehen. Zum Beispiel den folgenden Trace:
 
@@ -448,7 +455,9 @@ Data Races sind ein extrem schwer zu erkennendes Problem. ThreadSanitizer geht d
 
 Die Grundlegende Funktion des Tools ist einfach zu verwenden und man findet im Internet leicht Informationen, wie die Ergebnisse zu Interpretieren sind. 
 
-Diese Eigenschaften zeichnen das Tool als hilfreich und produktivitätssteigernd aus. Für die Entwicklung eines Mehrläufigen Programms empfiehlt sich die Benutzung um besagte Data Races frühzeitig zu erkennen und zu beheben.
+Falls man sich nähergehend über die Funktionsweise des Tools oder Algorithmus informieren möchte, muss man vorsichtig sein welche Version von der Quelle beschrieben wird. Zum Teil sind auch veraltete Quellen verfügbar, welche nicht einfach als veraltet zu Identifizieren sind.
+
+Im Allgemeinen, zeichnen die positiven Eigentschaften das Tool als hilfreich und produktivitätssteigernd aus. Für die Entwicklung eines Mehrläufigen Programms, empfiehlt sich die Benutzung um besagte Data Races frühzeitig zu erkennen und zu beheben.
  
 
 
