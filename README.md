@@ -7,7 +7,6 @@
 2. Aktueller Wissensstand zu ThreadSanitizer
   * [Dokumentation](#dokumentation)
   * [Beispiele](#beispiele)
-  * [Anwendungen von ThreadSanitizer](#anwendung-von-threadsanitizer)
 3. Benutzung von ThreadSanitizer
   * [Report Format](#report-format)
 4. Verwendeter Algorithmus
@@ -153,9 +152,6 @@ WARNING: ThreadSanitizer: data race (pid=26327)
 ==================
 ThreadSanitizer: reported 1 warnings
 ```
-
-## Anwendungen von ThreadSanitizer
-
 ***
 # 3. Benutzung von ThreadSanitizer
 ## Report Format
